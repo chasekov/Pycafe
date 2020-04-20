@@ -1,27 +1,55 @@
-import codecs
 import sys
+from enum import Enum
 
 def entry_from_bytes(bytes):
-    typeFlag = bytes.read_as_int(1)
+    bit = bytes.read_as_int(1)
+    typeFlag = TypeFlag.of(bit)
 
-    if typeFlag == 1:
+    if typeFlag == TypeFlag.UTF8:
         return Utf8.from_bytes(bytes)
-    elif typeFlag == 4:
+    elif typeFlag == TypeFlag.FLOAT:
         return Float.from_bytes(bytes)
-    elif typeFlag == 5:
-        return Long.from_bytes(bytes)    
-    elif typeFlag == 7:
+    elif typeFlag == TypeFlag.LONG:
+        return Long.from_bytes(bytes)
+    elif typeFlag == TypeFlag.DOUBLE:
+        return Double.from_bytes(bytes)    
+    elif typeFlag == TypeFlag.CLASS_REFERENCE:
         return ClassReference.from_bytes(bytes)
-    elif typeFlag == 8:
+    elif typeFlag == TypeFlag.STRING_REFERENCE:
         return StringReference.from_bytes(bytes)
-    elif typeFlag == 9:
+    elif typeFlag == TypeFlag.FIELD_REFERENCE:
         return FieldReference.from_bytes(bytes)
-    elif typeFlag == 10:
+    elif typeFlag == TypeFlag.METHOD_REFERENCE:
         return MethodReference.from_bytes(bytes)
-    elif typeFlag == 12:
+    elif typeFlag == TypeFlag.NAMEANDTYPE_REFERENCE:
         return NameAndType.from_bytes(bytes)
     else:
-        sys.exit("Failed cause we don't have {} typeFlag defined".format(typeFlag))
+        sys.exit("Failed cause we don't have {} typeFlag defined".format(bit))
+        return None
+
+class TypeFlag(Enum):
+    UTF8 = 0x0001
+    FLOAT = 0x0004
+    LONG = 0x0005
+    DOUBLE = 0x0006
+    CLASS_REFERENCE = 0x0007
+    STRING_REFERENCE = 0x0008
+    FIELD_REFERENCE = 0x0009
+    METHOD_REFERENCE = 0x000A
+    NAMEANDTYPE_REFERENCE = 0x000C
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.__str__()
+
+    @staticmethod
+    def of(bytes):
+        for flag in TypeFlag:
+            if flag.value == bytes:
+                return flag
+
         return None
 
 class ConstantPool:
@@ -33,25 +61,36 @@ class ConstantPool:
     def get_index(self, index):
         return self.constants[index - 1]
 
-    def resolve_as_utf8(self, index):
-        return self.constants[index - 1].text
+    def get_label(self, label):
+        return self.constants[label.index - 1]
+
+    def resolve_as_utf8(self, label):
+        return self.constants[label.index - 1].text
+
+    def __str__(self):
+        buffer = 'Constant pool:\n'
+
+        for i, entry in enumerate(self.constants, 0):
+            if entry == None:
+                continue
+
+            buffer += "  #{} = {}\n".format(i+1, entry)
+    
+        return buffer
 
     @classmethod
     def from_bytes(cls, stream):
         constants = list()
         pool_size = stream.read_as_int(2)
 
-        print("Constant Pool:")
         i = 1
-
         while i < pool_size:
             entry = entry_from_bytes(stream)
-            print('\t#' + str(i) + " = " + str(entry))
             constants.append(entry)
 
             # Phantom entry for Long/Double
-            if isinstance(entry, Long):
-                constants.append('')
+            if isinstance(entry, (Long, Double)):
+                constants.append(None)
                 i = i + 1
             
             i = i + 1
@@ -59,6 +98,7 @@ class ConstantPool:
         return cls(pool_size, constants)     
 
 class PoolLabel: 
+
     def __init__(self, index):
         self.index = index
 
@@ -68,6 +108,18 @@ class PoolLabel:
     @classmethod
     def from_bytes(cls, stream):
         return cls(stream.read_as_int(2))
+
+class Double:
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "[Double] value: {}D".format(self.value)
+
+    @classmethod
+    def from_bytes(cls, stream):
+        return cls(stream.read_as_int(8))
 
 class Long:
 
@@ -111,7 +163,7 @@ class FieldReference:
         self.nameAndTypeLabel = nameAndTypeLabel
 
     def __str__(self):
-        return "[FieldReference] classLabel: " + str(self.classLabel) + " nameAndTypeLabel: " + str(self.nameAndTypeLabel)
+        return "[FieldReference] classLabel: {} nameAndTypeLabel: {}".format(self.classLabel, self.nameAndTypeLabel)
 
     @classmethod
     def from_bytes(cls, stream):
@@ -127,10 +179,7 @@ class Utf8:
     @classmethod
     def from_bytes(cls, stream):
         byteSize = stream.read_as_int(2)
-        hexString = "".join(stream.read(byteSize))
-        content = codecs.decode(hexString, "hex").decode('utf-8')
-
-        return cls(content)
+        return cls(stream.read_as_utf8(byteSize))
 
 class NameAndType:
 
@@ -139,7 +188,7 @@ class NameAndType:
         self.typeLabel = typeLabel
 
     def __str__(self):
-        return "[NameAndType] nameLabel: " + str(self.nameLabel) + " typeLabel: " + str(self.typeLabel)
+        return "[NameAndType] nameLabel: {} typeLabel: {}".format(self.nameLabel, self.typeLabel)
 
     @classmethod
     def from_bytes(cls, stream):
@@ -152,7 +201,7 @@ class MethodReference:
         self.descriptorLabel = descriptorLabel
 
     def __str__(self):
-        return "[MethodReference] classLabel: " + str(self.classLabel) + " descriptorLabel: " + str(self.descriptorLabel)
+        return "[MethodReference] classLabel: {} descriptorLabel: {}".format(self.classLabel, self.descriptorLabel)
 
     @classmethod
     def from_bytes(cls, stream):
@@ -164,7 +213,7 @@ class ClassReference:
         self.nameLabel = nameLabel
 
     def __str__(self):
-        return "[ClassReference] nameLabel: " + str(self.nameLabel)
+        return "[ClassReference] nameLabel: {}".format(self.nameLabel)
 
     @classmethod
     def from_bytes(cls, stream):

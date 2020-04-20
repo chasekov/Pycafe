@@ -1,4 +1,7 @@
 from constant_pool import ConstantPool, Utf8, PoolLabel
+from opcodes import Opcode
+from hex_buffer import HexBuffer
+from instructions import Instruction
 
 class AttributeInfo:
 
@@ -15,7 +18,7 @@ class AttributeInfo:
         attribute_label = PoolLabel.from_bytes(stream)
         attributes_length = stream.read_as_int(4)
 
-        label_text = pool.resolve_as_utf8(attribute_label.index)
+        label_text = pool.resolve_as_utf8(attribute_label)
 
         if label_text == 'Code':
             return cls(attribute_label, attributes_length, CodeAttribute.from_bytes(pool, stream))
@@ -33,7 +36,7 @@ class LineNumberTableAttribute:
         self.line_number_table_length = line_number_table_length
 
     def __str__(self):
-        return "[LineNumberTable] length={}".format(len(self.line_number_table_length))
+        return "LineNumberTable length={}".format(self.line_number_table_length)
 
     @classmethod
     def from_bytes(cls, pool, stream):
@@ -55,9 +58,10 @@ class SourceFileAttribute:
 
 class CodeAttribute:
     
-    def __init__(self, max_stack, max_locals, attributes):
+    def __init__(self, max_stack, max_locals, instructions, attributes):
         self.max_stack = max_stack
         self.max_locals = max_locals
+        self.instructions = instructions
         self.attributes = attributes
 
     @classmethod
@@ -67,7 +71,12 @@ class CodeAttribute:
         code_length = stream.read_as_int(4)
 
         ## Ignored for now
-        stream.read(code_length)
+        hex_string = stream.read(code_length)
+        code_buffer = HexBuffer.from_string(hex_string)
+        instructions = list()
+
+        while code_buffer.has_more():
+            instructions.append(Instruction.from_buffer(code_buffer))
 
         ## Ignored for now
         exception_table_length = stream.read_as_int(2)
@@ -78,7 +87,16 @@ class CodeAttribute:
         for _ in range(0, attributes_count):
             attributes.append(AttributeInfo.from_bytes(pool, stream))
 
-        return cls(max_stack, max_locals, attributes)
+        return cls(max_stack, max_locals, instructions, attributes)
 
     def __str__(self):
-        return "[CodeAttribute] stack:" + str(self.max_stack) + " locals: " + str(self.max_locals)
+        buffer = "Code:\n"
+        buffer += "      stack={}, locals={}\n".format(self.max_stack, self.max_locals)
+
+        for instruction in self.instructions:
+            buffer += "        {}\n".format(instruction)
+
+        for attribute in self.attributes:
+            buffer += "      {}".format(attribute)
+
+        return buffer
