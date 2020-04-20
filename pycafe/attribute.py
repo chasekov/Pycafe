@@ -1,7 +1,7 @@
-from constant_pool import ConstantPool, Utf8, PoolLabel
-from opcodes import Opcode
-from hex_buffer import HexBuffer
-from instructions import Instruction
+from pycafe.constantpool import ConstantPool, Utf8, PoolLabel
+from pycafe.opcodes import Opcode
+from pycafe.hexbuffer import HexBuffer
+from pycafe.instructions import Instruction
 
 class AttributeInfo:
 

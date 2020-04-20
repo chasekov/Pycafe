@@ -1,4 +1,4 @@
-from opcodes import Opcode
+from pycafe.opcodes import Opcode
 
 class Instruction:
 

@@ -1,6 +1,6 @@
-from attribute import AttributeInfo
-from constant_pool import PoolLabel
-from access_flags import AccessFlags
+from pycafe.attribute import AttributeInfo
+from pycafe.constantpool import PoolLabel
+from pycafe.accessflags import AccessFlags
 
 class Method:
 

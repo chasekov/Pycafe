@@ -1,5 +1,5 @@
-from attribute import AttributeInfo
-from constant_pool import PoolLabel
+from pycafe.attribute import AttributeInfo
+from pycafe.constantpool import PoolLabel
 
 class Field:
 

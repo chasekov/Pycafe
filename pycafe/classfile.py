@@ -1,9 +1,9 @@
-from constant_pool import ConstantPool, PoolLabel
-from field import Field
-from method import Method
-from attribute import AttributeInfo
-from access_flags import AccessFlags
-from hex_buffer import HexBuffer
+from pycafe.constantpool import ConstantPool, PoolLabel
+from pycafe.field import Field
+from pycafe.method import Method
+from pycafe.attribute import AttributeInfo
+from pycafe.accessflags import AccessFlags
+from pycafe.hexbuffer import HexBuffer
 
 class Class:
 
