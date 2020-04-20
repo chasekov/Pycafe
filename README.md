@@ -31,3 +31,5 @@ Named **Pycafe** after a java class file's first 4 'magic' bytes : [**'ca'**, **
 - [ ] BootstrapMethods
 
 ## Demos
+### Pycafe (Left) and Javap (Right)
+![Demo](https://github.com/chasekov/Pycafe/blob/master/imgs/demo.png)
