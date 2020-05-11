@@ -1,5 +1,5 @@
 # Pycafe
-A project that emulates **javap** in python. 
+A project that emulates **javap** in python. Reads a compiled java class file's bytecode
 
 Named **Pycafe** after a java class file's first 4 'magic' bytes : [**'ca'**, **'fe**', **'ba'**, **'be'**]
 
